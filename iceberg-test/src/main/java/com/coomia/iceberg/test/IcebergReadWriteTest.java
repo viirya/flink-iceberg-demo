@@ -19,6 +19,7 @@ package com.coomia.iceberg.test;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -42,6 +43,8 @@ import com.google.common.collect.ImmutableMap;
 public class IcebergReadWriteTest {
 
   public static void main(String[] args) throws Exception {
+    String tableLocation = args[0];
+
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
     env.getConfig().setAutoWatermarkInterval(5000L);
@@ -75,9 +78,9 @@ public class IcebergReadWriteTest {
     PartitionSpec spec = PartitionSpec.unpartitioned();
 
     // table path
-    String basePath = "hdfs://namenode:9000/";
+    String basePath = "file:///tmp/";
 
-    String tablePath = basePath.concat("iceberg-table-01");
+    String tablePath = basePath.concat(tableLocation);
 
     // property settings, format as orc or parquet
     Map<String, String> props =
@@ -88,13 +91,14 @@ public class IcebergReadWriteTest {
 
     TableLoader tableLoader = TableLoader.fromHadoopTable(tablePath);
 
-    FlinkSink.forRowData(inputStream).table(table).tableLoader(tableLoader).writeParallelism(1)
+     FlinkSink.forRowData(inputStream).table(table).tableLoader(tableLoader).writeParallelism(1)
         .build();
     
     //read and write to file.
-    DataStream<RowData> batchData = FlinkSource.forRowData().env(env).tableLoader(tableLoader).build();
-    batchData.print();
-    batchData.writeAsCsv(basePath.concat("out"), WriteMode.OVERWRITE, "\n", " ");
+    // DataStream<RowData> batchData = FlinkSource.forRowData().env(env).tableLoader(tableLoader).build();
+    // batchData.print();
+    // batchData.writeAsCsv(basePath.concat("out"), WriteMode.OVERWRITE, "\n", " ");
+    // inputStream.writeAsText(basePath.concat("out"), WriteMode.OVERWRITE);
     env.execute("iceberg write and read.");
     
   }
