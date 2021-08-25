@@ -70,6 +70,18 @@
 			<artifactId>iceberg-flink</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-aws</artifactId>
+			<version>3.3.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-common</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
 		<!-- added table api -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>

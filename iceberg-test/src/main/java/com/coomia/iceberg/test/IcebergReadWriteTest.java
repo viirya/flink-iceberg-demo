@@ -43,12 +43,15 @@ import com.google.common.collect.ImmutableMap;
 public class IcebergReadWriteTest {
 
   public static void main(String[] args) throws Exception {
-    String tableLocation = args[0];
+    String basePath = args[0];
+    String tableLocation = args[1];
 
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
     env.getConfig().setAutoWatermarkInterval(5000L);
     env.setParallelism(1);
+    // Iceberg file committer only commits files when checkpointing.
+    env.enableCheckpointing(10000);
 
     DataStream<RowData> inputStream = env.addSource(new RichSourceFunction<RowData>() {
 
@@ -78,8 +81,6 @@ public class IcebergReadWriteTest {
     PartitionSpec spec = PartitionSpec.unpartitioned();
 
     // table path
-    String basePath = "file:///tmp/";
-
     String tablePath = basePath.concat(tableLocation);
 
     // property settings, format as orc or parquet
@@ -91,7 +92,7 @@ public class IcebergReadWriteTest {
 
     TableLoader tableLoader = TableLoader.fromHadoopTable(tablePath);
 
-     FlinkSink.forRowData(inputStream).table(table).tableLoader(tableLoader).writeParallelism(1)
+    FlinkSink.forRowData(inputStream).table(table).tableLoader(tableLoader).writeParallelism(1)
         .build();
     
     //read and write to file.
