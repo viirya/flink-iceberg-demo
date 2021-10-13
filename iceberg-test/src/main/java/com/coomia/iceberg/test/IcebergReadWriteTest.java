@@ -46,6 +46,8 @@ public class IcebergReadWriteTest {
     String basePath = args[0];
     String tableLocation = args[1];
 
+    final boolean randomFail = args.length >= 3 ? Boolean.valueOf(args[2]) : false;
+
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
     env.getConfig().setAutoWatermarkInterval(5000L);
@@ -60,10 +62,17 @@ public class IcebergReadWriteTest {
 
       @Override
       public void run(SourceContext<RowData> ctx) throws Exception {
+        // Test for restart from savepoint. Randomly fail this app.
+        long count = 0;
         while (flag) {
           GenericRowData row = new GenericRowData(2);
           row.setField(0, System.currentTimeMillis());
           row.setField(1, StringData.fromString(UUID.randomUUID().toString()));
+
+          if (randomFail && count % 10000000 == 0) {
+            throw new RuntimeException("Fail IcebergReadWriteTest!");
+          }
+          count += 1;
           ctx.collect(row);
         }
 
